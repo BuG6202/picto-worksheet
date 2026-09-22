@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Picto</title>
+<style>
+  :root{
+    --ink:#1f2430;
+    --muted:#6b7280;
+    --line:#d8dbe2;
+    --accent:#3b6fd6;
+    --accent-soft:#eef3fd;
+    --paste-fill:#f2f2f2;
+    --paste-border:#9a9a9a;
+    --panel-bg:#f7f8fb;
+    --page-bg:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    font-family:"Segoe UI",Arial,sans-serif;
+    background:var(--panel-bg);
+    color:var(--ink);
+  }
+  body{
+    display:flex;
+    min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+
+  /* ---------- LEFT: input panel ---------- */
+  .panel{
+    width:380px;
+    flex:0 0 380px;
+    background:var(--page-bg);
+    border-right:1px solid var(--line);
+    padding:24px 22px 40px;
+    overflow-y:auto;
+    height:100vh;
+    position:sticky;
+    top:0;
+  }
+  label{
+    display:block;
+    font-size:14px;
+    font-weight:700;
+    margin:18px 0 6px;
+    color:var(--ink);
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=text], textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 11px;
+    font-size:14px;
+    font-family:inherit;
+    resize:vertical;
+    background:#fff;
+    color:var(--ink);
+  }
+  input[type=text]:focus, textarea:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+    border-color:var(--accent);
+  }
+  textarea#texte{min-height:120px;line-height:1.5;}
+
+  .upload-btn{
+    margin-top:8px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    border:1px dashed var(--accent);
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    width:100%;
+    justify-content:center;
+  }
+  .upload-btn:hover{background:#e2eaf9;}
+  input[type=file]{display:none;}
+
+  .thumbs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:12px;
+  }
+  .thumb{
+    position:relative;
+    width:56px;height:56px;
+    border-radius:6px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:#fafafa;
+  }
+  .thumb img{width:100%;height:100%;object-fit:contain;}
+  .thumb button{
+    position:absolute;top:-2px;right:-2px;
+    width:18px;height:18px;
+    border-radius:50%;
+    border:none;
+    background:#e14b4b;
+    color:#fff;
+    font-size:11px;
+    line-height:18px;
+    text-align:center;
+    cursor:pointer;
+    padding:0;
+  }
+
+  .actions{
+    margin-top:28px;
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    flex:1;
+    padding:11px 12px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .btn.primary{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  .btn.primary:hover{background:#2f5cba;}
+  .btn:hover{background:#f2f3f6;}
+
+  /* ---------- RIGHT: preview ---------- */
+  .preview-wrap{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    padding:32px 20px 60px;
+    overflow:auto;
+    height:100vh;
+  }
+
+  .page{
+    width:210mm;
+    height:297mm;
+    min-width:210mm;
+    min-height:297mm;
+    max-width:210mm;
+    max-height:297mm;
+    background:var(--page-bg);
+    box-shadow:0 4px 24px rgba(0,0,0,.14);
+    padding:11mm 13mm 8mm;
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+    overflow:hidden;
+  }
+
+  .titre{
+    font-size:14pt;
+    text-decoration:underline;
+    text-align:left;
+    font-weight:600;
+    min-height:1.3em;
+    word-break:break-word;
+  }
+
+  .image-label{
+    font-size:16pt;
+    font-weight:700;
+    text-align:center;
+    margin-top:3mm;
+    word-break:break-word;
+    line-height:1.25;
+  }
+
+  .glue-zone{
+    height:9cm;
+    flex:0 0 9cm;
+    margin-top:6mm;
+    border:1px dashed #e4e4e4;
+    border-radius:4px;
+  }
+
+  .texte-content{
+    margin-top:8mm;
+    font-size:20pt;
+    line-height:2.3;
+    word-spacing:0.28em;
+    letter-spacing:0.01em;
+    text-align:left;
+    white-space:pre-wrap;
+  }
+
+  .paste-item{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+    vertical-align:middle;
+    margin:0 3mm;
+  }
+  .paste-box{
+    width:3cm;
+    height:3cm;
+    border:2px dashed var(--paste-border);
+    background:var(--paste-fill);
+    border-radius:3px;
+    flex:0 0 auto;
+  }
+  .paste-label{
+    font-size:16pt;
+    line-height:1.2;
+    margin-top:1mm;
+    text-align:center;
+    word-spacing:0.1em;
+    white-space:nowrap;
+  }
+
+  .bottom-strip{
+    margin-top:auto;
+    flex:0 0 auto;
+    padding-top:5mm;
+  }
+  .cut-line{
+    border:none;
+    border-top:1px dashed #9a9a9a;
+    margin:0 0 5mm;
+    position:relative;
+  }
+  .cut-line::after{
+    content:"✂";
+    position:absolute;
+    left:-2mm;
+    top:-3.2mm;
+    font-size:10pt;
+    color:#9a9a9a;
+    background:#fff;
+    padding:0 1mm;
+  }
+  .picto-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4mm;
+    justify-content:flex-start;
+    align-items:center;
+    min-height:3cm;
+  }
+  .picto-row .picto{
+    width:3cm;
+    height:3cm;
+    flex:0 0 auto;
+    border:1px solid #d8d8d8;
+    border-radius:2px;
+    overflow:hidden;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .picto-row .picto img{
+    width:100%;height:100%;
+    object-fit:contain;
+  }
+
+  @media (max-width:820px){
+    body{flex-direction:column;}
+    .panel{
+      width:100%;
+      flex:none;
+      height:auto;
+      position:relative;
+      border-right:none;
+      border-bottom:1px solid var(--line);
+    }
+    .preview-wrap{
+      height:auto;
+      overflow:auto;
+      padding:20px 8px 40px;
+    }
+    /* .page keeps its fixed A4 size (210mm x 297mm); the wrapper
+       scrolls horizontally/vertically on narrow screens instead of
+       resizing the page itself. */
+  }
+</style>
+</head>
+<body>
+
+  <div class="panel">
+    <label for="titre">titre</label>
+    <input type="text" id="titre">
+
+    <label for="image">image</label>
+    <input type="text" id="image">
+
+    <label for="texte">texte</label>
+    <textarea id="texte"></textarea>
+
+    <label>picto upload</label>
+    <button type="button" class="upload-btn" id="uploadBtn">picto upload</button>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <div class="thumbs" id="thumbs"></div>
+
+    <div class="actions">
+      <button class="btn" id="clearBtn">Effacer</button>
+      <button class="btn primary" id="printBtn">Imprimer</button>
+    </div>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="page" id="page">
+      <div class="titre" id="outTitre"></div>
+      <div class="image-label" id="outImage"></div>
+      <div class="glue-zone"></div>
+      <div class="texte-content" id="outTexte"></div>
+      <div class="bottom-strip">
+        <hr class="cut-line">
+        <div class="picto-row" id="pictoRow"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const titreEl = document.getElementById('titre');
+  const imageEl = document.getElementById('image');
+  const texteEl = document.getElementById('texte');
+  const fileInput = document.getElementById('fileInput');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const thumbsEl = document.getElementById('thumbs');
+  const clearBtn = document.getElementById('clearBtn');
+  const printBtn = document.getElementById('printBtn');
+
+  const outTitre = document.getElementById('outTitre');
+  const outImage = document.getElementById('outImage');
+  const outTexte = document.getElementById('outTexte');
+  const pictoRow = document.getElementById('pictoRow');
+
+  let images = []; // {id, dataUrl}
+
+  function escapeHtml(str){
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function buildTexteHtml(){
+    const raw = texteEl.value || '';
+    if(!raw.trim()) return '';
+    const parts = raw.split(/([（(][^）)]*[）)])/g);
+    let html = '';
+    parts.forEach(part => {
+      if(!part) return;
+      const m = part.match(/^[（(]([^）)]*)[）)]$/);
+      if(m){
+        const inner = m[1].trim();
+        html += `<span class="paste-item">
+                   <span class="paste-box"></span>
+                   <span class="paste-label">${escapeHtml(inner)}</span>
+                 </span>`;
+      } else {
+        html += `<span>${escapeHtml(part)}</span>`;
+      }
+    });
+    return html;
+  }
+
+  function buildPictoRowHtml(){
+    return images.map(img => `<div class="picto"><img src="${img.dataUrl}" alt=""></div>`).join('');
+  }
+
+  function renderHeader(){
+    outTitre.textContent = titreEl.value || '';
+    outImage.textContent = imageEl.value || '';
+  }
+
+  function renderThumbs(){
+    thumbsEl.innerHTML = images.map(img =>
+      `<div class="thumb"><img src="${img.dataUrl}" alt=""><button type="button" data-id="${img.id}">✕</button></div>`
+    ).join('');
+  }
+
+  function renderPictoRow(){
+    pictoRow.innerHTML = buildPictoRowHtml();
+  }
+
+  function renderAll(){
+    renderHeader();
+    outTexte.innerHTML = buildTexteHtml();
+    renderThumbs();
+    renderPictoRow();
+  }
+
+  titreEl.addEventListener('input', renderHeader);
+  imageEl.addEventListener('input', renderHeader);
+  texteEl.addEventListener('input', () => { outTexte.innerHTML = buildTexteHtml(); });
+
+  uploadBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    let pending = files.length;
+    if(pending === 0) return;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        images.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), dataUrl: ev.target.result });
+        pending--;
+        if(pending === 0){
+          renderThumbs();
+          renderPictoRow();
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    fileInput.value = '';
+  });
+
+  thumbsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-id]');
+    if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    images = images.filter(img => img.id !== id);
+    renderThumbs();
+    renderPictoRow();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    titreEl.value = '';
+    imageEl.value = '';
+    texteEl.value = '';
+    images = [];
+    renderAll();
+  });
+
+  // Print: build a standalone print document in a new top-level window/tab.
+  // This avoids cases where window.print() is blocked inside a sandboxed
+  // preview iframe, since a freshly opened window/tab is top-level.
+  function buildPrintDocument(){
+    const pageStyles = `
+      *{box-sizing:border-box;}
+      html,body{margin:0;padding:0;background:#fff;}
+      .page{
+        width:210mm;height:297mm;
+        padding:11mm 13mm 8mm;
+        display:flex;flex-direction:column;
+        font-family:"Segoe UI",Arial,sans-serif;
+        color:#1f2430;
+        overflow:hidden;
+      }
+      .titre{font-size:14pt;text-decoration:underline;font-weight:600;min-height:1.3em;}
+      .image-label{font-size:16pt;font-weight:700;text-align:center;margin-top:3mm;line-height:1.25;}
+      .glue-zone{height:9cm;flex:0 0 9cm;margin-top:6mm;}
+      .texte-content{margin-top:8mm;font-size:20pt;line-height:2.3;word-spacing:0.28em;letter-spacing:0.01em;white-space:pre-wrap;}
+      .paste-item{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3mm;}
+      .paste-box{width:3cm;height:3cm;border:2px dashed #9a9a9a;background:#f2f2f2;border-radius:3px;flex:0 0 auto;}
+      .paste-label{font-size:16pt;line-height:1.2;margin-top:1mm;text-align:center;white-space:nowrap;}
+      .bottom-strip{margin-top:auto;flex:0 0 auto;padding-top:5mm;}
+      .cut-line{border:none;border-top:1px dashed #9a9a9a;margin:0 0 5mm;position:relative;}
+      .cut-line::after{content:"✂";position:absolute;left:-2mm;top:-3.2mm;font-size:10pt;color:#9a9a9a;background:#fff;padding:0 1mm;}
+      .picto-row{display:flex;flex-wrap:wrap;gap:4mm;min-height:3cm;}
+      .picto-row .picto{width:3cm;height:3cm;flex:0 0 auto;border:1px solid #d8d8d8;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+      .picto-row .picto img{width:100%;height:100%;object-fit:contain;}
+      @page{size:A4;margin:0;}
+    `;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Picto</title>
+      <style>${pageStyles}</style></head><body>
+      <div class="page">
+        <div class="titre">${escapeHtml(titreEl.value || '')}</div>
+        <div class="image-label">${escapeHtml(imageEl.value || '')}</div>
+        <div class="glue-zone"></div>
+        <div class="texte-content">${buildTexteHtml()}</div>
+        <div class="bottom-strip">
+          <hr class="cut-line">
+          <div class="picto-row">${buildPictoRowHtml()}</div>
+        </div>
+      </div>
+      <script>
+        window.onload = function(){
+          setTimeout(function(){ window.focus(); window.print(); }, 150);
+        };
+      <\/script>
+      </body></html>`;
+    return html;
+  }
+
+  printBtn.addEventListener('click', () => {
+    const doc = buildPrintDocument();
+    const win = window.open('', '_blank');
+    if(!win){
+      // popup blocked: fall back to printing this window directly
+      window.print();
+      return;
+    }
+    win.document.open();
+    win.document.write(doc);
+    win.document.close();
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
