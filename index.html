@@ -185,17 +185,27 @@
   }
 
   .glue-zone{
-    height:9cm;
-    flex:0 0 9cm;
+    flex:1 1 auto;
+    min-height:2cm;
     margin-top:6mm;
     border:1px dashed #e4e4e4;
     border-radius:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .glue-zone img{
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
   }
 
   .texte-content{
+    flex:0 0 auto;
     margin-top:8mm;
     font-size:20pt;
-    line-height:2.3;
+    line-height:2.4;
     word-spacing:0.28em;
     letter-spacing:0.01em;
     text-align:left;
@@ -207,7 +217,7 @@
     flex-direction:column;
     align-items:center;
     vertical-align:middle;
-    margin:0 3mm;
+    margin:5mm 3mm;
   }
   .paste-box{
     width:3cm;
@@ -227,7 +237,7 @@
   }
 
   .bottom-strip{
-    margin-top:auto;
+    margin-top:6mm;
     flex:0 0 auto;
     padding-top:5mm;
   }
@@ -301,6 +311,9 @@
 
     <label for="image">image</label>
     <input type="text" id="image">
+    <button type="button" class="upload-btn" id="imageUploadBtn">image upload</button>
+    <input type="file" id="imageFileInput" accept="image/*">
+    <div class="thumbs" id="imageThumb"></div>
 
     <label for="texte">texte</label>
     <textarea id="texte"></textarea>
@@ -320,7 +333,7 @@
     <div class="page" id="page">
       <div class="titre" id="outTitre"></div>
       <div class="image-label" id="outImage"></div>
-      <div class="glue-zone"></div>
+      <div class="glue-zone" id="glueZone"></div>
       <div class="texte-content" id="outTexte"></div>
       <div class="bottom-strip">
         <hr class="cut-line">
@@ -337,15 +350,20 @@
   const fileInput = document.getElementById('fileInput');
   const uploadBtn = document.getElementById('uploadBtn');
   const thumbsEl = document.getElementById('thumbs');
+  const imageUploadBtn = document.getElementById('imageUploadBtn');
+  const imageFileInput = document.getElementById('imageFileInput');
+  const imageThumbEl = document.getElementById('imageThumb');
   const clearBtn = document.getElementById('clearBtn');
   const printBtn = document.getElementById('printBtn');
 
   const outTitre = document.getElementById('outTitre');
   const outImage = document.getElementById('outImage');
   const outTexte = document.getElementById('outTexte');
+  const glueZone = document.getElementById('glueZone');
   const pictoRow = document.getElementById('pictoRow');
 
   let images = []; // {id, dataUrl}
+  let mainImage = null; // {dataUrl}
 
   function escapeHtml(str){
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -391,11 +409,23 @@
     pictoRow.innerHTML = buildPictoRowHtml();
   }
 
+  function renderGlueZone(){
+    glueZone.innerHTML = mainImage ? `<img src="${mainImage.dataUrl}" alt="">` : '';
+  }
+
+  function renderImageThumb(){
+    imageThumbEl.innerHTML = mainImage
+      ? `<div class="thumb"><img src="${mainImage.dataUrl}" alt=""><button type="button" id="removeMainImage">✕</button></div>`
+      : '';
+  }
+
   function renderAll(){
     renderHeader();
     outTexte.innerHTML = buildTexteHtml();
     renderThumbs();
     renderPictoRow();
+    renderGlueZone();
+    renderImageThumb();
   }
 
   titreEl.addEventListener('input', renderHeader);
@@ -432,11 +462,34 @@
     renderPictoRow();
   });
 
+  imageUploadBtn.addEventListener('click', () => imageFileInput.click());
+
+  imageFileInput.addEventListener('change', (e) => {
+    const file = (e.target.files || [])[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      mainImage = { dataUrl: ev.target.result };
+      renderGlueZone();
+      renderImageThumb();
+    };
+    reader.readAsDataURL(file);
+    imageFileInput.value = '';
+  });
+
+  imageThumbEl.addEventListener('click', (e) => {
+    if(!e.target.closest('#removeMainImage')) return;
+    mainImage = null;
+    renderGlueZone();
+    renderImageThumb();
+  });
+
   clearBtn.addEventListener('click', () => {
     titreEl.value = '';
     imageEl.value = '';
     texteEl.value = '';
     images = [];
+    mainImage = null;
     renderAll();
   });
 
@@ -457,12 +510,13 @@
       }
       .titre{font-size:14pt;text-decoration:underline;font-weight:600;min-height:1.3em;}
       .image-label{font-size:16pt;font-weight:700;text-align:center;margin-top:3mm;line-height:1.25;}
-      .glue-zone{height:9cm;flex:0 0 9cm;margin-top:6mm;}
-      .texte-content{margin-top:8mm;font-size:20pt;line-height:2.3;word-spacing:0.28em;letter-spacing:0.01em;white-space:pre-wrap;}
-      .paste-item{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3mm;}
+      .glue-zone{flex:1 1 auto;min-height:2cm;margin-top:6mm;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+      .glue-zone img{max-width:100%;max-height:100%;object-fit:contain;}
+      .texte-content{flex:0 0 auto;margin-top:8mm;font-size:20pt;line-height:2.4;word-spacing:0.28em;letter-spacing:0.01em;white-space:pre-wrap;}
+      .paste-item{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:5mm 3mm;}
       .paste-box{width:3cm;height:3cm;border:2px dashed #9a9a9a;background:#f2f2f2;border-radius:3px;flex:0 0 auto;}
       .paste-label{font-size:16pt;line-height:1.2;margin-top:1mm;text-align:center;white-space:nowrap;}
-      .bottom-strip{margin-top:auto;flex:0 0 auto;padding-top:5mm;}
+      .bottom-strip{margin-top:6mm;flex:0 0 auto;padding-top:5mm;}
       .cut-line{border:none;border-top:1px dashed #9a9a9a;margin:0 0 5mm;position:relative;}
       .cut-line::after{content:"✂";position:absolute;left:-2mm;top:-3.2mm;font-size:10pt;color:#9a9a9a;background:#fff;padding:0 1mm;}
       .picto-row{display:flex;flex-wrap:wrap;gap:4mm;min-height:3cm;}
@@ -475,7 +529,7 @@
       <div class="page">
         <div class="titre">${escapeHtml(titreEl.value || '')}</div>
         <div class="image-label">${escapeHtml(imageEl.value || '')}</div>
-        <div class="glue-zone"></div>
+        <div class="glue-zone">${mainImage ? `<img src="${mainImage.dataUrl}" alt="">` : ''}</div>
         <div class="texte-content">${buildTexteHtml()}</div>
         <div class="bottom-strip">
           <hr class="cut-line">
